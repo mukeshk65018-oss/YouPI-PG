@@ -26,7 +26,7 @@ This status reflects the current `feature/family-admin-dashboard` branch as revi
 6. **Secrets and account security:** audit every production token, API key, bank observer/OAuth credential and historical Git commit for exposure. Rotation and controlled migration of data encrypted under the old master key require an operational plan.
 7. **PII/OTP and devices:** assess observer permissions, SMS/notification content retention, OTP rate limits, device revocation and lost-device behavior.
 8. **Compliance and operations:** verify receiving-account terms, UPI/NPCI/banking requirements, legal role, refunds/chargebacks, backups/WAL restore, incident response and fraud reconciliation.
-9. **CI not verified here:** run `npm ci`, `npm run typecheck`, `npm run build`, `npm test`, `npm audit --omit=dev --audit-level=high` and Android APK build/verification before merging. GitHub Actions availability on forks may require explicit enabling.
+9. **Remaining verification:** GitHub Actions CI, dependency audit, regression tests, workflow lint, PR-title lint and CodeQL (JavaScript/TypeScript and Java/Kotlin) passed for commit `ab4b9cfeb337431b1b2ebd89df9b02a9b0c25cf4`. Android APK build/device verification and an independent security review remain separate release gates.
 
 ## Synthetic verification plan
 
