@@ -28,9 +28,9 @@ Notification observers, UTR strings, browser events, and signed webhooks cannot 
 
 `render.yaml` selects a free plan, enables SQLite fallback, and defines no durable disk. A restart/ephemeral filesystem may lose payment sessions, outbox items, webhook history, and credentials. Use a production-grade persistent database, backups, restore drills, and durable queue/outbox monitoring before production.
 
-### High — Merchant key and webhook secret backward compatibility
+### High — Legacy merchant credential migration must be verified operationally
 
-`packages/db/src/repositories/merchant.repository.js` still accepts `webhookSecret` in `verifyApiKey` for legacy merchant compatibility, and initial merchant creation derives the API-key hash from the webhook secret when no API key is supplied. Rotate to an independently generated merchant API key and ensure the database hash is for that key before deployment. Do not share either credential with a browser.
+The current branch separates merchant API keys from webhook-signing secrets: new API keys are generated independently, the SDK no longer falls back to the webhook secret for API authentication, and migration logic rotates legacy records whose API-key hash matches the webhook-secret hash. Before deployment, verify the migration against a disposable copy of the actual database, confirm the encrypted merchant key can be recovered by trusted server-side code, and update each affected merchant integration with its newly issued API key. Never expose either credential to a browser.
 
 ### Medium — Rate limits are process-local
 
