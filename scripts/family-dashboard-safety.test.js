@@ -26,6 +26,9 @@ test('family dashboard includes core accessibility and usability safeguards', as
   assert.match(html, /aria-live=\"polite\"/);
   assert.match(html, /prefers-reduced-motion/);
   assert.match(html, /:focus-visible/);
+  assert.match(html, /document\.querySelectorAll\("\.view"\)\.forEach\(v=>v\.setAttribute\("aria-hidden"/);
+  assert.match(html, /prefers-reduced-motion,\s*reduce/);
+  assert.match(html, /aria-pressed/);
 });
 
 test('static family dashboard does not make unauthenticated network requests', async () => {
