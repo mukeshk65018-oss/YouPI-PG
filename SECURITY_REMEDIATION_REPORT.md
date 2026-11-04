@@ -28,9 +28,9 @@ Notification observers, UTR strings, browser events, and signed webhooks cannot 
 
 `render.yaml` selects a free plan, enables SQLite fallback, and defines no durable disk. A restart/ephemeral filesystem may lose payment sessions, outbox items, webhook history, and credentials. Use a production-grade persistent database, backups, restore drills, and durable queue/outbox monitoring before production.
 
-### High — Merchant key and webhook secret backward compatibility
+### High — Legacy merchant credential migration must be verified operationally
 
-`packages/db/src/repositories/merchant.repository.js` still accepts `webhookSecret` in `verifyApiKey` for legacy merchant compatibility, and initial merchant creation derives the API-key hash from the webhook secret when no API key is supplied. Rotate to an independently generated merchant API key and ensure the database hash is for that key before deployment. Do not share either credential with a browser.
+The current branch separates merchant API keys from webhook-signing secrets: new API keys are generated independently, the SDK no longer falls back to the webhook secret for API authentication, and migration logic rotates legacy records whose API-key hash matches the webhook-secret hash. Before deployment, verify the migration against a disposable copy of the actual database, confirm the encrypted merchant key can be recovered by trusted server-side code, and update each affected merchant integration with its newly issued API key. Never expose either credential to a browser.
 
 ### Medium — Rate limits are process-local
 
@@ -64,3 +64,16 @@ No obvious credential exfiltration, cryptocurrency miner, obfuscated runtime, or
 4. Review/apply Supabase migrations through the normal DBA workflow; verify grants, RLS, audit actor identity, pending/final state transitions, and order fulfilment guard.
 5. Test the full checkout and bank-verification lifecycle on a sandbox account, including duplicate UTR, webhook replay, refunds/reversals, failure/expiry, and admin decision races.
 6. Obtain payment provider/bank/legal compliance approval and independent payment-security review before accepting live funds.
+
+## Additional Android observer findings (2026-11-04)
+
+The Android source review identified release blockers requiring a dedicated remediation pass:
+
+- `ApiClient.java` stores the paired device signing key in ordinary `SharedPreferences`. Move new credentials to Android Keystore-backed encrypted storage, migrate existing plaintext values safely, then delete the legacy values only after verified migration. Test interrupted migration, unpair, re-pair, and backup/restore behavior.
+- Validate the pairing base URL before any network request or persistence. Require HTTPS for non-loopback hosts; permit only explicit emulator/loopback HTTP development endpoints. Reject malformed URLs, user-info, unexpected ports and fragments, and prevent signed requests from being redirected to another origin.
+- Remove sensitive sender/endpoint details from logs. Never log SMS bodies, tokens, signing keys, or credential-bearing URLs.
+- Review the necessity and disclosure of SMS permissions and notification-listener access. Google Play restricts SMS permissions and requires eligibility and policy compliance; no Play approval is claimed.
+- The foreground service's 24-hour wake lock and 30-second heartbeat do not guarantee unrestricted background execution. Verify current Android service-type limits, battery restrictions, and device-specific behavior.
+- Treat all parsed SMS and notification fields as untrusted observations. They cannot prove cleared funds or authorize fulfilment.
+
+These findings were added after source inspection only. No APK rebuild, signing, emulator/device run, or Play policy assessment has yet verified remediation.

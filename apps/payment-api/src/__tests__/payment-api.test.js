@@ -25,6 +25,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
   let baseUrl;
   let testDb;
   let merchantSecret;
+  let merchantApiKey;
   let merchantWebhookUrl;
   let merchantId;
 
@@ -41,6 +42,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
     const seededMerchant = new MerchantRepository(testDb).findAll()[0];
     merchantId = seededMerchant.id;
     merchantSecret = seededMerchant.webhookSecret;
+    merchantApiKey = seededMerchant.merchantKey;
     merchantWebhookUrl = seededMerchant.webhookUrl;
   });
 
@@ -392,7 +394,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
 
     // The owning merchant, presenting its secret, sees the customer too.
     const ownerState = await request(`/api/v1/checkout/${paymentId}/state`, {
-      headers: { 'X-Merchant-Key': merchantSecret }
+      headers: { 'X-Merchant-Key': merchantApiKey }
     });
     assert.equal(ownerState.body.customer.phoneNumber, '9111222333');
 
@@ -582,7 +584,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
     assert.ok(obs1.body.attribution.verificationTag.includes('Single Verification') || obs1.body.attribution.verificationTag.includes('SMS'));
 
     // Check payment status: must be SUCCESS with Level 1
-    const checkL1 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantSecret) });
+    const checkL1 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantApiKey) });
     assert.equal(checkL1.body.status, 'OBSERVED_SUCCESS');
     assert.equal(checkL1.body.settlementState, 'NOT_RECONCILED');
     assert.equal(checkL1.body.verificationLevel, 1);
@@ -605,7 +607,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
     assert.equal(obs2.body.attribution.verificationLevel, 2);
     assert.ok(obs2.body.attribution.verificationTag.includes('Dual Verification'));
 
-    const checkL2 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantSecret) });
+    const checkL2 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantApiKey) });
     assert.equal(checkL2.body.verificationLevel, 2);
     assert.ok(checkL2.body.verificationSources.includes('GOOGLE_MESSAGES'));
     assert.ok(checkL2.body.verificationSources.includes('GMAIL'));
@@ -964,7 +966,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
       assert.equal(obs1.body.attribution.verificationLevel, 1);
 
       // Payment MUST be immediately SUCCESS for customer
-      const checkAfterObs1 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantSecret) });
+      const checkAfterObs1 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantApiKey) });
       assert.equal(checkAfterObs1.body.status, 'OBSERVED_SUCCESS');
       assert.equal(checkAfterObs1.body.verificationLevel, 1);
 
@@ -996,7 +998,7 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
       assert.equal(obs2.body.attribution.verificationLevel, 2);
 
       // Invariant: Verification level in admin upgrades to L2 (Dual Verification)
-      const checkAfterObs2 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantSecret) });
+      const checkAfterObs2 = await request(`/api/v1/payments/${paymentId}`, { headers: merchantHeaders(merchantApiKey) });
       assert.equal(checkAfterObs2.body.verificationLevel, 2);
       assert.deepEqual(checkAfterObs2.body.verificationSources.sort(), ['GMAIL', 'GOOGLE_MESSAGES'].sort());
 
@@ -1159,7 +1161,8 @@ describe('Payment API End-to-End HTTP Integration Tests', () => {
       assert.equal(settingsBefore.status, 200);
       assert.ok(settingsBefore.body.merchantId);
       assert.equal(settingsBefore.body.publishableKey, settingsBefore.body.merchantId);
-      assert.equal(settingsBefore.body.merchantKey, '', 'legacy webhook secrets must not be returned as merchant API keys');
+      assert.ok(settingsBefore.body.merchantKey, 'merchant settings must expose the dedicated API key to the trusted admin');
+      assert.notEqual(settingsBefore.body.merchantKey, merchantSecret, 'webhook signing secret must never be exposed as the API key');
 
       // 2. Rotate Merchant API Key via POST /api/v1/admin/merchant-key/rotate
       const rotateRes = await request('/api/v1/admin/merchant-key/rotate', {

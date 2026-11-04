@@ -14,6 +14,7 @@ describe('Coin Top-Up Wallet Demo Store Integration Tests', () => {
   let storeBaseUrl;
   let testDb;
   const storeSecret = 'wallet_store_secret_9988';
+  const storeApiKey = 'yp_live_wallet_store_test_api_key_1234567890';
 
   before(async () => {
     process.env.NODE_ENV = 'test';
@@ -25,7 +26,7 @@ describe('Coin Top-Up Wallet Demo Store Integration Tests', () => {
     testDb.execute('UPDATE merchants SET webhook_secret = ?, webhook_url = ?, api_key_hash = ? WHERE id = ?', [
       storeSecret,
       'http://localhost:5099/api/webhook',
-      hashApiKey(storeSecret),
+      hashApiKey(storeApiKey),
       '00000000-0000-0000-0000-000000000001'
     ]);
 
@@ -33,6 +34,7 @@ describe('Coin Top-Up Wallet Demo Store Integration Tests', () => {
       gatewayApiUrl: `http://localhost:${apiInstance.port}`,
       merchantId: '00000000-0000-0000-0000-000000000001',
       webhookSecret: storeSecret,
+      apiKey: storeApiKey,
       publicBaseUrl: 'http://localhost:5099'
     });
 

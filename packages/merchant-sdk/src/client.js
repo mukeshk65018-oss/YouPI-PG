@@ -48,8 +48,8 @@ export class YoupiPaymentClient {
     if (this.merchantId) {
       headers['X-Merchant-Id'] = this.merchantId;
     }
-    if (this.apiKey || this.webhookSecret) {
-      headers['X-Merchant-Key'] = this.apiKey || this.webhookSecret;
+    if (this.apiKey) {
+      headers['X-Merchant-Key'] = this.apiKey;
     }
     if (params.orderToken) {
       headers['X-Order-Token'] = params.orderToken;
@@ -103,11 +103,10 @@ export class YoupiPaymentClient {
   async getPayment(paymentId) {
     const url = `${this.apiUrl}/api/v1/payments/${paymentId}`;
     const headers = {};
-    // Present the merchant secret so the gateway returns the merchant-private fields
-    // (metadata, verification internals, returnUrl). Without it the caller gets the
-    // redacted public view, which is all an unauthenticated holder of a payment id sees.
-    if (this.apiKey || this.webhookSecret) {
-      headers['X-Merchant-Key'] = this.apiKey || this.webhookSecret;
+    // Merchant-private payment fields require the dedicated API credential.
+    // A webhook signing secret is never valid for API authentication.
+    if (this.apiKey) {
+      headers['X-Merchant-Key'] = this.apiKey;
     }
 
     const res = await fetch(url, { headers });

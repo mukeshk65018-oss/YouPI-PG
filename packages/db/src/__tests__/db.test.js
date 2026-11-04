@@ -37,7 +37,8 @@ describe('@youpi/db Unit & Integration Tests', () => {
     assert.equal(merchantRepo.verifyApiKey(merchant, 'mk_live_dedicated_api_credential_123456'), true);
     assert.equal(merchantRepo.verifyApiKey(merchant, 'independent_webhook_hmac_secret_123456'), false);
     assert.equal(merchantRepo.verifyApiKey(merchant, 'legacy_branding_key_123456'), false);
-    assert.equal(merchant.merchantKey, '', 'webhook secrets must never be exposed as API keys');
+    assert.notEqual(merchant.merchantKey, 'independent_webhook_hmac_secret_123456');
+    assert.equal(merchantRepo.verifyApiKey(merchant, 'independent_webhook_hmac_secret_123456'), false);
   });
 
   beforeEach(() => {
@@ -67,6 +68,27 @@ describe('@youpi/db Unit & Integration Tests', () => {
     assert.equal(testAccount.upiId, 'merchant@upi');
     assert.equal(testAccount.isActive, true);
     assert.equal(testAccount.isSlotBusy, false);
+  });
+
+  test('webhook credentials never authenticate merchant API requests', () => {
+    const merchant = merchantRepo.create({
+      businessName: 'Webhook isolation fixture',
+      slug: 'webhook-isolation-fixture',
+      contactEmail: 'webhook-isolation@example.test',
+      contactPhone: '9000000001',
+      webhookSecret: 'independent-webhook-signing-material'
+    });
+
+    const dedicatedApiKey = merchant.merchantKey;
+    assert.ok(dedicatedApiKey, 'a dedicated API credential is generated when one is not supplied');
+    assert.equal(merchantRepo.verifyApiKey(merchant, dedicatedApiKey), true);
+    assert.equal(merchantRepo.verifyApiKey(merchant, 'independent-webhook-signing-material'), false);
+
+    merchantRepo.update(merchant.id, { webhookSecret: 'rotated-webhook-signing-material' });
+    const afterRotation = merchantRepo.findById(merchant.id);
+    assert.equal(afterRotation.apiKeyHash, merchant.apiKeyHash, 'webhook rotation must not change API authentication');
+    assert.equal(merchantRepo.verifyApiKey(afterRotation, dedicatedApiKey), true);
+    assert.equal(merchantRepo.verifyApiKey(afterRotation, 'rotated-webhook-signing-material'), false);
   });
 
   test('manual UPI UTR is idempotent, unique per receiving account, and only moves to review', () => {

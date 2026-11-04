@@ -3,7 +3,7 @@
 > **YOUPI PG V2**  
 > _Sovereign • Self-Hosted • Zero-Fee • Deterministic UPI Payment Gateway Suite_  
 > **Architecture Reference:** Production Specification V2  
-> **Runtime Target:** Node.js `>= 20.0.0` (ESM Native) • SQLite WAL • Android Kotlin
+> **Runtime Target:** Node.js `>= 24.22.1` (ESM Native) • SQLite WAL • Android Kotlin
 
 ---
 

@@ -11,12 +11,15 @@ describe('Architectural Update: Selling Modes (Online vs Offline), COD Flow, & C
   let baseUrl;
   let testDb;
   let merchantSecret;
+  let merchantApiKey;
 
   before(async () => {
     testDb = new Database({ inMemory: true });
     apiInstance = await startPaymentApi(6195, testDb);
     baseUrl = `http://localhost:${apiInstance.port}`;
-    merchantSecret = new MerchantRepository(testDb).findAll()[0].webhookSecret;
+    const merchant = new MerchantRepository(testDb).findAll()[0];
+    merchantSecret = merchant.webhookSecret;
+    merchantApiKey = merchant.merchantKey;
   });
 
   after(async () => {
@@ -336,7 +339,7 @@ describe('Architectural Update: Selling Modes (Online vs Offline), COD Flow, & C
     });
     await new Promise(r => setTimeout(r, 6500));
 
-    const state = await request(`/api/v1/payments/${paymentId}`, { headers: { 'X-Merchant-Key': merchantSecret } });
+    const state = await request(`/api/v1/payments/${paymentId}`, { headers: { 'X-Merchant-Key': merchantApiKey } });
     assert.equal(state.body.status, 'OBSERVED_SUCCESS');
 
     // Restarting a paid order must fail cleanly. It reuses the merchant's order reference,
@@ -391,7 +394,7 @@ describe('Architectural Update: Selling Modes (Online vs Offline), COD Flow, & C
 
     // 3. The owning merchant does get the full view.
     const ownerRes = await request(`/api/v1/payments/${paymentId}/cod`, {
-      headers: { 'X-Merchant-Key': merchantSecret }
+      headers: { 'X-Merchant-Key': merchantApiKey }
     });
     assert.equal(ownerRes.status, 200);
     assert.equal(ownerRes.body.customer.mobileNumber, '9111000099');

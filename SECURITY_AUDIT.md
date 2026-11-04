@@ -1,8 +1,7 @@
 # YouPI-PG security & bug-fix status
 
 **Status: EXPERIMENTAL; NOT APPROVED FOR REAL-MONEY PRODUCTION.**
-Scope is limited to the fork's `security/webhook-durability-hardening` branch.
-This is a targeted static review, not an exhaustive independent penetration test or UPI settlement certification.
+This status reflects the current `feature/family-admin-dashboard` branch as reviewed on 2026-11-04. It is a targeted source/configuration review, not an exhaustive independent penetration test, bank/acquirer approval, or UPI settlement certification.
 
 ## Implemented in this branch
 
@@ -13,7 +12,9 @@ This is a targeted static review, not an exhaustive independent penetration test
 | Startup recovery | `apps/payment-api/src/index.js` | Drain missing outbox deliveries on boot and during the periodic worker; existing pending deliveries continue retrying. |
 | Regression coverage | `packages/core/src/__tests__/webhook-outbox-durability.test.js` | Synthetic pre-fetch persistence, pending outbox replay, duplicate prevention and unchanged body/ID retry. |
 | Safer configuration templates | `.env.example`, `packages/common/src/secrets.js` | Remove published password/secret defaults, generate local service secrets when unset and restrict POSIX secret-directory/file permissions. |
-| Documentation | `README.md`, `ARCHITECTURE.md` | Align runtime with Node 24 and correct claims about timed-out payment verification. |
+| Merchant credential separation | `packages/db/src/repositories/merchant.repository.js`, `packages/db/src/migrate.js`, `packages/merchant-sdk/src/client.js`, `apps/coin-wallet-store/src/server.js` | Separate merchant API keys from webhook-signing secrets, rotate legacy shared credentials during migration, and remove SDK fallback that reused the webhook secret for API authentication. |
+| Family dashboard preview | `apps/family-dashboard/`, `scripts/family-dashboard-safety.test.js` | Static synthetic-data preview with accessibility and reduced-motion safeguards; it is not connected to live financial data. |
+| Documentation | `README.md`, `ARCHITECTURE.md`, `DEPLOYMENT_CHECKLIST.md` | Align runtime and deployment guidance with Node 24 and document credential separation and dashboard release boundaries. |
 
 ## Deployment blockers / unresolved areas
 
@@ -25,7 +26,7 @@ This is a targeted static review, not an exhaustive independent penetration test
 6. **Secrets and account security:** audit every production token, API key, bank observer/OAuth credential and historical Git commit for exposure. Rotation and controlled migration of data encrypted under the old master key require an operational plan.
 7. **PII/OTP and devices:** assess observer permissions, SMS/notification content retention, OTP rate limits, device revocation and lost-device behavior.
 8. **Compliance and operations:** verify receiving-account terms, UPI/NPCI/banking requirements, legal role, refunds/chargebacks, backups/WAL restore, incident response and fraud reconciliation.
-9. **CI not verified here:** run `npm ci`, `npm run typecheck`, `npm run build`, `npm test`, `npm audit --omit=dev --audit-level=high` and Android APK build/verification before merging. GitHub Actions availability on forks may require explicit enabling.
+9. **Remaining verification:** GitHub Actions CI, dependency audit, regression tests, workflow lint, PR-title lint and CodeQL (JavaScript/TypeScript and Java/Kotlin) passed for commit `ab4b9cfeb337431b1b2ebd89df9b02a9b0c25cf4`. Android APK build/device verification and an independent security review remain separate release gates.
 
 ## Synthetic verification plan
 
@@ -38,3 +39,16 @@ This is a targeted static review, not an exhaustive independent penetration test
 ## Merge policy
 
 Keep this PR in **draft** until tests and a reviewer validate the behavior. It is not appropriate to merge or deploy based solely on this change list.
+
+## Android observer review — 2026-11-04
+
+A focused source review of `apps/android-observer-app/` found additional release blockers that are not covered by the passing Node.js CI suite:
+
+1. **Device signing key at rest:** `ApiClient.java` persists `signing_key` and device pairing material in ordinary `SharedPreferences`. The app already declares AndroidX Security Crypto, but the inspected client does not use encrypted preferences or Android Keystore-backed storage. Implement an authenticated, backward-compatible migration, clear legacy plaintext values after successful migration, and test unpair/re-pair and restore behavior.
+2. **Transport endpoint validation:** pairing accepts a caller-supplied base URL and uses `HttpURLConnection`. App-wide cleartext is disabled by the network security config except emulator/loopback hosts, which is a good baseline, but validate and normalize the URL before persisting it: require HTTPS for non-loopback hosts, reject user-info, unexpected ports/schemes, fragments and malformed authorities, and ensure redirects cannot forward signed device data to a different host.
+3. **Sensitive log content:** `BankSmsFilter.java` logs sender addresses and `ApiClient.java` logs full endpoint URLs on failures. Avoid logging bank sender identifiers, message content, enrollment tokens, signing keys, or URLs containing credentials; use redacted structured diagnostics.
+4. **SMS and notification access:** the manifest requests `READ_SMS`, `RECEIVE_SMS`, and notification-listener access. Explain collection, filtering, transmission, retention, and revocation clearly in-app; collect only what is strictly needed. Distribution through Google Play is subject to restricted-permission and policy review; do not assume approval.
+5. **Background execution:** the manifest requests data-sync and special-use foreground service types and battery-optimization exemption. The current service attempts a long-lived heartbeat loop and a 24-hour wake lock. Validate behavior against current Android foreground-service limits and OEM battery policies; do not promise unrestricted 24/7 execution.
+6. **Notification-derived observations:** the notification listener parses amounts, UTR-like references and sender VPAs from notification text. These are untrusted user-interface signals, not authenticated bank evidence and must never independently settle a payment.
+
+The Android module's source was reviewed, but no signed release APK, emulator/device test, Play policy review, or end-to-end device enrollment test was performed in this review. Passing repository CI does not close these Android-specific gates.
