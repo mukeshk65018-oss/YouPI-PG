@@ -602,7 +602,9 @@ describe('Gateway Hardening & Invariant Protection Test Suite (#23, #25, #26, #2
   test('Issue #2: COD endpoints mask customer email and mobile for unauthenticated callers', async () => {
     const sessionRepo = new PaymentSessionRepository(testDb);
     const customerRepo = new CustomerRepository(testDb);
-    const merchantId = '00000000-0000-0000-0000-000000000001';
+    const merchant = new MerchantRepository(testDb).getDefault();
+    assert.ok(merchant, 'test database must provide a default merchant');
+    const merchantId = merchant.id;
 
     const uniqueCodPhone = `97${Math.floor(10000000 + Math.random() * 90000000)}`;
     const customer = customerRepo.create({
@@ -637,7 +639,6 @@ describe('Gateway Hardening & Invariant Protection Test Suite (#23, #25, #26, #2
     assert.equal(rawRes.body.customer, null);
 
     // Authenticated request with X-Merchant-Key
-    const merchant = new MerchantRepository(testDb).findById(merchantId);
     const authRes = await new Promise((resolve, reject) => {
       const req = http.request(url, {
         method: 'GET',
