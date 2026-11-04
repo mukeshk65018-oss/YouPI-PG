@@ -8,10 +8,10 @@ Open `apps/family-dashboard/index.html` in a modern browser. No build step, pack
 
 ## Design
 
-- Monochrome-only palette: black backgrounds with white text in dark mode; white backgrounds with black text in light mode.
+- Polished navy / indigo visual system with dark and light themes, clear typography, restrained gradients, and consistent cards.
 - Responsive layout with Overview, Transactions, Merchants, Configuration, Webhooks, and System Health views.
 - Theme toggle; transaction search; sample merchant and transaction records.
-- Minimal Apple / Notion-inspired visual language with restrained borders, spacing, and typography.
+- Accessible skip link, semantic section navigation, visible keyboard focus, reduced-motion support, responsive transaction tables, and clear demo-data labels.
 
 ## Safety boundaries
 
