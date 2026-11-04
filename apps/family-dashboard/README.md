@@ -20,9 +20,12 @@ Open `apps/family-dashboard/index.html` in a modern browser. No build step, pack
 - Live payment processing, merchant onboarding, automatic fulfilment, and real-money actions are not implemented or enabled.
 - Never treat a browser callback, screenshot, SMS/email observation, or demo status as proof of settlement. Verify against official bank records and complete the project's security, legal, and compliance review before considering real-money use.
 
-## Next implementation stages
+## Integration status
 
-1. Integrate authenticated family-admin access and server-side authorization.
-2. Connect read-only operational data after the backend and database are reviewed.
-3. Add audited admin actions, backups, monitoring, and tests.
-4. Keep live payment activation as a separate, explicit approval gate.
+The dashboard is intentionally not connected to live data. The GitHub Pages site is public static hosting and cannot safely hold gateway credentials or run a private API proxy. Do not add admin tokens, merchant keys, webhook secrets, database URLs, or service-role keys to this page.
+
+The secure server-side integration contract, authentication requirements, read-only API contract, hosting prerequisites, and acceptance gates are documented in [FAMILY_DASHBOARD_INTEGRATION.md](../../docs/FAMILY_DASHBOARD_INTEGRATION.md).
+
+The next implementation milestone is a separately hosted, authenticated backend-for-frontend (BFF) with dedicated family-admin sessions and read-only, redacted data. Only after its security and persistence acceptance gates pass should the dashboard be switched from synthetic records to live operational data.
+
+Live payment activation and privileged payment actions remain separate approval gates.
