@@ -59,13 +59,17 @@ export class MerchantRepository {
    */
   create(data) {
     const id = data.id || crypto.randomUUID();
-    const branding = typeof data.branding === 'object'
-      ? serializeBranding(data.branding)
-      : (data.branding || '{"primaryColor":"#2563eb","appName":"YOUPI PG","logoUrl":null}');
     const now = new Date().toISOString();
     const rawWebhookSecret = data.webhookSecret || crypto.randomBytes(32).toString('hex');
-    // Keep API authentication independent from webhook signing credentials.
-    const apiKeyHash = data.apiKeyHash || (data.apiKey ? hashApiKey(data.apiKey) : null);
+    // Generate a dedicated API credential when the caller does not supply one.
+    // It is encrypted in branding for retrieval by the trusted admin UI; only its hash
+    // is used for authentication. It is never derived from the webhook signing secret.
+    const rawApiKey = data.apiKey || `yp_live_${crypto.randomBytes(24).toString('hex')}`;
+    const brandingData = typeof data.branding === 'object'
+      ? { ...data.branding, merchantApiKey: rawApiKey }
+      : { merchantApiKey: rawApiKey };
+    const branding = serializeBranding(brandingData);
+    const apiKeyHash = data.apiKeyHash || hashApiKey(rawApiKey);
 
     const sql = `
       INSERT INTO merchants (id, business_name, slug, contact_email, contact_phone, webhook_url, webhook_secret, api_key_hash, branding, created_at, updated_at)
