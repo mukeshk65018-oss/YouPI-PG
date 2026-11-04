@@ -602,8 +602,13 @@ describe('Gateway Hardening & Invariant Protection Test Suite (#23, #25, #26, #2
   test('Issue #2: COD endpoints mask customer email and mobile for unauthenticated callers', async () => {
     const sessionRepo = new PaymentSessionRepository(testDb);
     const customerRepo = new CustomerRepository(testDb);
-    const merchant = new MerchantRepository(testDb).getDefault();
+    const merchantRepo = new MerchantRepository(testDb);
+    const merchant = merchantRepo.getDefault();
     assert.ok(merchant, 'test database must provide a default merchant');
+    // Ensure this fixture owns a known, persisted API key instead of relying on
+    // whichever credential happened to be present in the shared seeded database.
+    const ownerMerchant = merchantRepo.rotateApiKey(merchant.id);
+    assert.ok(ownerMerchant?.merchantKey, 'test merchant must have a dedicated API key');
     const merchantId = merchant.id;
 
     const uniqueCodPhone = `97${Math.floor(10000000 + Math.random() * 90000000)}`;
@@ -642,7 +647,7 @@ describe('Gateway Hardening & Invariant Protection Test Suite (#23, #25, #26, #2
     const authRes = await new Promise((resolve, reject) => {
       const req = http.request(url, {
         method: 'GET',
-        headers: { 'X-Merchant-Key': merchant.merchantKey }
+        headers: { 'X-Merchant-Key': ownerMerchant.merchantKey }
       }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
