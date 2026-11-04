@@ -79,6 +79,7 @@ test('Full 53-Point Customer Identity, Authentication & Payment Invariant Matrix
   const demoStore = new CoinWalletStoreServer({
     gatewayApiUrl: apiBase,
     merchantId: merchant.id,
+    apiKey: merchant.merchantKey,
     webhookSecret: merchant.webhookSecret,
     publicBaseUrl: 'http://localhost:5984'
   });
