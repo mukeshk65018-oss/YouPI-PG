@@ -1,27 +1,68 @@
-# Deployment checklist — Fins & Wings manual UPI
+# YOUPI PG V2 — Deployment & Release Checklist
 
-Deployment is intentionally not performed as part of this change.
+This checklist is for the self-hosted YOUPI PG V2 repository. A passing CI run or a published static dashboard is not production approval.
 
-## Before any real payment
+## 1. Repository and build integrity
 
-- [ ] Keep this gateway out of production until the unresolved items in `SECURITY_REMEDIATION_REPORT.md` are reviewed and signed off.
-- [ ] Use a persistent, backed-up database. `render.yaml` currently selects a free service with SQLite and declares no persistent disk; local SQLite data is not a production persistence strategy.
-- [ ] Configure a stable `ENCRYPTION_MASTER_KEY`, `JWT_SECRET`, admin credentials/token, merchant API key, webhook secret, Supabase service-role key, and all other secrets in the hosting secret manager. Rotate any key ever committed, shared, or stored in an untracked backup.
-- [ ] Set exact HTTPS `YOUPI_ALLOWED_ORIGINS`, `YOUPI_ALLOWED_RETURN_ORIGINS`, checkout frame ancestors, and customer return URL origins.
-- [ ] Use a separately rotated merchant API key and webhook HMAC secret. Keep both server-side. Do not put either in Vite/browser configuration.
-- [ ] Configure the Fins & Wings webhook URL and matching `YOUPI_WEBHOOK_SECRET`. Confirm raw-body signature verification, delivery-ID matching, and duplicate handling.
-- [ ] Review migrations `008_youpi_pg.sql` and `009_youpi_manual_review.sql` against the live schema, take a restorable backup, then apply them through the normal controlled database migration process.
-- [ ] Verify RLS and grants in Supabase: gateway attempts/events and the event RPC remain inaccessible to `anon` and ordinary `authenticated` users; only `service_role` invokes the webhook RPC; only authorized admins invoke the review RPC.
-- [ ] Apply edge rate limits, request-size limits, WAF rules, egress restrictions, alerting, log retention controls, and an incident/secret-rotation procedure. The gateway's in-process rate limiter is per-process and is not a multi-instance control.
-- [ ] Disable unused SMS/Gmail observers and remove their OAuth credentials/permissions if they are not part of the deployment. `MANUAL_UPI` itself bypasses observer-health gating and cannot be auto-attributed.
-- [ ] Test UTR reuse, duplicate webhooks, retries, network interruption, timeout, amount mismatch, wrong merchant, admin rejection, admin approval, and rejected order retry using synthetic data.
-- [ ] Confirm fulfilment is impossible before authenticated admin verification and stock confirmation. Reconcile the credited bank account manually before approving a UTR.
-- [ ] Run gateway `npm test`, customer `npm test`, admin `npm run build`, gateway typecheck/build where supported, and dependency audit. Retain test output with the release review.
-- [ ] Establish database backups and perform a restore drill; monitor webhook delivery backlog and failed attempts.
+- [ ] Review the exact release commit and all changes from the previous release.
+- [ ] Run `npm ci`, `npm run typecheck`, `npm run build`, and `npm test` on the supported Node.js 24 line.
+- [ ] Confirm GitHub Actions passes secret scanning, dependency audit, typecheck/build, and regression tests.
+- [ ] Confirm the Android APK is built from the same reviewed source and verify its published SHA-256 checksum.
+- [ ] Confirm no `.env`, database files, OAuth tokens, APK signing keys, backups, or generated secrets are tracked.
+- [ ] Review dependency changes, licenses, and native module compatibility on the target operating system.
 
-## Release controls
+## 2. Host and persistence
 
-- [ ] Review all diffs and ensure `.env`, `.env.save`, `.env.before-*`, and `data/.secrets/*` remain untracked.
-- [ ] Apply migrations only after approval by the database owner. This code change does not connect to or mutate live Supabase.
-- [ ] Push the reviewed feature branch only after explicit release approval.
-- [ ] Deploy only after the production approval and checklist sign-off.
+- [ ] Select a host that supports long-running Node.js processes, persistent writable storage, required native modules, and the required network access.
+- [ ] Do not assume a static host or serverless deployment can run the process supervisor, SQLite database, Gmail/SMS observers, WhatsApp session, or durable webhook worker.
+- [ ] Keep the SQLite database on a persistent local volume; enable WAL and foreign-key enforcement.
+- [ ] Configure automated encrypted backups and complete a restore drill before accepting real payments.
+- [ ] Confirm process restart, host reboot, database recovery, and graceful shutdown behavior.
+- [ ] Configure HTTPS reverse proxying, strict host/origin allowlists, request limits, firewall rules, and monitoring.
+- [ ] Keep the Control Center and internal observer ports private; expose only the routes that are required.
+
+## 3. Secrets and authentication
+
+- [ ] Generate unique production values for `ENCRYPTION_MASTER_KEY`, `JWT_SECRET`, admin credentials/tokens, observer tokens, Android enrollment secrets, merchant API keys, and webhook HMAC secrets.
+- [ ] Store secrets only in the host's server-side secret store or protected environment; never place them in browser bundles, GitHub Pages, source code, screenshots, or logs.
+- [ ] Keep merchant API keys separate from webhook-signing secrets. Rotate any credential that may have been exposed.
+- [ ] Restrict admin and observer credentials to the minimum required services; document revocation and rotation.
+- [ ] Configure exact `YOUPI_ALLOWED_ORIGINS`, checkout frame ancestors, allowed return URLs, and webhook destination policy.
+- [ ] Confirm rate limiting and abuse controls are appropriate for the deployment topology; the in-process limiter is not a shared multi-instance control.
+
+## 4. Payment and observer safety
+
+- [ ] Configure and verify the receiving account using the bank's official records.
+- [ ] Bind each observer/device to its authorized merchant and receiving account; reject unregistered or mismatched observations.
+- [ ] Test exact-amount attribution, duplicate observations, late alerts, amount mismatch, reused UTRs, queue contention, expiry, and recovery using synthetic data.
+- [ ] Verify webhook HMAC signatures, delivery IDs, idempotency, retry behavior, and durable outbox recovery.
+- [ ] Treat SMS, Gmail, browser callbacks, screenshots, and observer events as signals—not conclusive proof of settlement.
+- [ ] Reconcile any real credit against official bank records before manually approving fulfilment or other irreversible actions.
+- [ ] Disable unused Gmail/SMS/Android observers and remove their OAuth permissions and credentials.
+- [ ] Keep development tools, OTP disclosure, simulators, and test routes disabled in production.
+
+## 5. Dashboard and data protection
+
+- [ ] Treat `apps/family-dashboard` on GitHub Pages as a static synthetic-data preview only.
+- [ ] Do not add admin tokens, merchant API keys, webhook secrets, database credentials, or service-role keys to the static dashboard.
+- [ ] Before connecting live family operations data, deploy a separate authenticated server-side BFF with dedicated family-admin sessions, CSRF protection, rate limits, audit logging, and field-level redaction.
+- [ ] Prove that unauthenticated users and users without the family-admin role cannot access any family API endpoint.
+- [ ] Verify that customer phone numbers, UPI identifiers, raw bank messages, UTRs, secrets, and raw database rows are not returned by default.
+- [ ] Keep privileged payment operations disabled until separately reviewed and approved.
+
+## 6. Legal, bank, and operational release gates
+
+- [ ] Obtain qualified legal/compliance review and confirm the bank/acquirer and applicable regulatory requirements for the intended use.
+- [ ] Do not represent YOUPI PG as bank-approved, NPCI-approved, audited, or production-certified.
+- [ ] Confirm the receiving account and merchant arrangements are permitted for the intended activity.
+- [ ] Establish incident response, security contact, alerting, log retention, backup retention, and credential-rotation procedures.
+- [ ] Run a staging pilot with synthetic data and explicitly documented limits before considering any real-money pilot.
+- [ ] Keep production payment activation disabled until all applicable gates are reviewed and approved by the responsible owner.
+
+## 7. Current repository status
+
+- The family dashboard is a static GitHub Pages preview and is not connected to live gateway data.
+- The current Vercel connection is not a YOUPI-PG deployment and must not be reused from another project.
+- The connected Supabase project must not be reused for YOUPI-PG if it belongs to another application.
+- The default deployment model documented by this repository is self-hosted Node.js with persistent SQLite and separately supervised services.
+- Passing automated tests verifies tested code paths; it does not establish legal authorization, bank settlement correctness, production availability, or payment-system certification.
