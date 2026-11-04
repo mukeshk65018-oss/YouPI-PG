@@ -98,7 +98,8 @@ export class CoinWalletStoreServer {
    * @param {{
    *   gatewayApiUrl?: string,
    *   merchantId?: string,
-   *   webhookSecret?: string
+   *   webhookSecret?: string,
+   *   apiKey?: string
    * }} [options={}]
    */
   constructor(options = {}) {
@@ -106,6 +107,7 @@ export class CoinWalletStoreServer {
     this.gatewayApiUrl = options.gatewayApiUrl || process.env.PAYMENT_API_URL || process.env.PAYMENT_API_INTERNAL_URL || `http://127.0.0.1:${internalPort}`;
     this.merchantId = options.merchantId || '00000000-0000-0000-0000-000000000001';
     this.webhookSecret = options.webhookSecret || getCoinStoreWebhookSecret();
+    this.apiKey = options.apiKey || process.env.COIN_STORE_API_KEY || null;
 
     // Canonical public origin of this store. Post-payment return URLs are built from this
     // value rather than from the request's Host / X-Forwarded-* headers, which are
@@ -131,6 +133,7 @@ export class CoinWalletStoreServer {
     this.paymentClient = new YoupiPaymentClient({
       apiUrl: this.gatewayApiUrl,
       merchantId: this.merchantId,
+      apiKey: this.apiKey,
       webhookSecret: this.webhookSecret
     });
 
