@@ -226,6 +226,9 @@ export function runMigrations(targetDb) {
     }
   }
 
+  // Return the post-migration merchant record, including any newly rotated API credential.
+  defaultMerchant = merchantRepo.findById(defaultMerchant.id);
+
   // Seed default UPI receiving account if none
   const accountRepo = new ReceivingAccountRepository(db);
   const accounts = accountRepo.findByMerchantId(defaultMerchant.id);
