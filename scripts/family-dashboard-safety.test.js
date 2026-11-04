@@ -12,9 +12,20 @@ test('family dashboard is clearly identified as a synthetic demo', async () => {
   assert.match(html, /DEMO DATA ONLY/i);
   assert.match(html, /Synthetic records only/i);
   assert.match(html, /Live payment processing/i);
+  assert.match(html, /DEMO DATA ONLY/i);
+  assert.match(html, /Synthetic examples — no money moved/i);
   assert.match(html, /NO LIVE PAYMENT PROCESSING/i);
   assert.match(readme, /synthetic demonstration data/i);
   assert.match(readme, /does not call the payment API, database, bank/i);
+});
+
+test('family dashboard includes core accessibility and usability safeguards', async () => {
+  const html = await readFile(dashboardUrl, 'utf8');
+  assert.match(html, /Skip to dashboard content/);
+  assert.match(html, /aria-label=\"Dashboard sections\"/);
+  assert.match(html, /aria-live=\"polite\"/);
+  assert.match(html, /prefers-reduced-motion/);
+  assert.match(html, /:focus-visible/);
 });
 
 test('static family dashboard does not make unauthenticated network requests', async () => {
