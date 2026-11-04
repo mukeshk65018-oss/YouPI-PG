@@ -12,7 +12,9 @@ This status reflects the current `feature/family-admin-dashboard` branch as revi
 | Startup recovery | `apps/payment-api/src/index.js` | Drain missing outbox deliveries on boot and during the periodic worker; existing pending deliveries continue retrying. |
 | Regression coverage | `packages/core/src/__tests__/webhook-outbox-durability.test.js` | Synthetic pre-fetch persistence, pending outbox replay, duplicate prevention and unchanged body/ID retry. |
 | Safer configuration templates | `.env.example`, `packages/common/src/secrets.js` | Remove published password/secret defaults, generate local service secrets when unset and restrict POSIX secret-directory/file permissions. |
-| Documentation | `README.md`, `ARCHITECTURE.md` | Align runtime with Node 24 and correct claims about timed-out payment verification. |
+| Merchant credential separation | `packages/db/src/repositories/merchant.repository.js`, `packages/db/src/migrate.js`, `packages/merchant-sdk/src/client.js`, `apps/coin-wallet-store/src/server.js` | Separate merchant API keys from webhook-signing secrets, rotate legacy shared credentials during migration, and remove SDK fallback that reused the webhook secret for API authentication. |
+| Family dashboard preview | `apps/family-dashboard/`, `scripts/family-dashboard-safety.test.js` | Static synthetic-data preview with accessibility and reduced-motion safeguards; it is not connected to live financial data. |
+| Documentation | `README.md`, `ARCHITECTURE.md`, `DEPLOYMENT_CHECKLIST.md` | Align runtime and deployment guidance with Node 24 and document credential separation and dashboard release boundaries. |
 
 ## Deployment blockers / unresolved areas
 
