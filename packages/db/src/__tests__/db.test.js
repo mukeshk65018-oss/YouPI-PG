@@ -78,12 +78,15 @@ describe('@youpi/db Unit & Integration Tests', () => {
       webhookSecret: 'independent-webhook-signing-material'
     });
 
-    assert.equal(merchant.apiKeyHash, null);
+    const dedicatedApiKey = merchant.merchantKey;
+    assert.ok(dedicatedApiKey, 'a dedicated API credential is generated when one is not supplied');
+    assert.equal(merchantRepo.verifyApiKey(merchant, dedicatedApiKey), true);
     assert.equal(merchantRepo.verifyApiKey(merchant, 'independent-webhook-signing-material'), false);
 
     merchantRepo.update(merchant.id, { webhookSecret: 'rotated-webhook-signing-material' });
     const afterRotation = merchantRepo.findById(merchant.id);
-    assert.equal(afterRotation.apiKeyHash, null);
+    assert.equal(afterRotation.apiKeyHash, merchant.apiKeyHash, 'webhook rotation must not change API authentication');
+    assert.equal(merchantRepo.verifyApiKey(afterRotation, dedicatedApiKey), true);
     assert.equal(merchantRepo.verifyApiKey(afterRotation, 'rotated-webhook-signing-material'), false);
   });
 
