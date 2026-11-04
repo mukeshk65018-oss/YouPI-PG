@@ -69,6 +69,24 @@ describe('@youpi/db Unit & Integration Tests', () => {
     assert.equal(testAccount.isSlotBusy, false);
   });
 
+  test('webhook credentials never authenticate merchant API requests', () => {
+    const merchant = merchantRepo.create({
+      businessName: 'Webhook isolation fixture',
+      slug: 'webhook-isolation-fixture',
+      contactEmail: 'webhook-isolation@example.test',
+      contactPhone: '9000000001',
+      webhookSecret: 'independent-webhook-signing-material'
+    });
+
+    assert.equal(merchant.apiKeyHash, null);
+    assert.equal(merchantRepo.verifyApiKey(merchant, 'independent-webhook-signing-material'), false);
+
+    merchantRepo.update(merchant.id, { webhookSecret: 'rotated-webhook-signing-material' });
+    const afterRotation = merchantRepo.findById(merchant.id);
+    assert.equal(afterRotation.apiKeyHash, null);
+    assert.equal(merchantRepo.verifyApiKey(afterRotation, 'rotated-webhook-signing-material'), false);
+  });
+
   test('manual UPI UTR is idempotent, unique per receiving account, and only moves to review', () => {
     const first = sessionRepo.create({ merchantId: testMerchant.id, receivingAccountId: testAccount.id,
       orderId: 'MANUAL-UTR-1', amountPaise: 12300, method: PaymentMethod.MANUAL_UPI });
