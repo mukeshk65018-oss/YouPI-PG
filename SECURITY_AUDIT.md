@@ -39,3 +39,16 @@ This status reflects the current `feature/family-admin-dashboard` branch as revi
 ## Merge policy
 
 Keep this PR in **draft** until tests and a reviewer validate the behavior. It is not appropriate to merge or deploy based solely on this change list.
+
+## Android observer review — 2026-11-04
+
+A focused source review of `apps/android-observer-app/` found additional release blockers that are not covered by the passing Node.js CI suite:
+
+1. **Device signing key at rest:** `ApiClient.java` persists `signing_key` and device pairing material in ordinary `SharedPreferences`. The app already declares AndroidX Security Crypto, but the inspected client does not use encrypted preferences or Android Keystore-backed storage. Implement an authenticated, backward-compatible migration, clear legacy plaintext values after successful migration, and test unpair/re-pair and restore behavior.
+2. **Transport endpoint validation:** pairing accepts a caller-supplied base URL and uses `HttpURLConnection`. App-wide cleartext is disabled by the network security config except emulator/loopback hosts, which is a good baseline, but validate and normalize the URL before persisting it: require HTTPS for non-loopback hosts, reject user-info, unexpected ports/schemes, fragments and malformed authorities, and ensure redirects cannot forward signed device data to a different host.
+3. **Sensitive log content:** `BankSmsFilter.java` logs sender addresses and `ApiClient.java` logs full endpoint URLs on failures. Avoid logging bank sender identifiers, message content, enrollment tokens, signing keys, or URLs containing credentials; use redacted structured diagnostics.
+4. **SMS and notification access:** the manifest requests `READ_SMS`, `RECEIVE_SMS`, and notification-listener access. Explain collection, filtering, transmission, retention, and revocation clearly in-app; collect only what is strictly needed. Distribution through Google Play is subject to restricted-permission and policy review; do not assume approval.
+5. **Background execution:** the manifest requests data-sync and special-use foreground service types and battery-optimization exemption. The current service attempts a long-lived heartbeat loop and a 24-hour wake lock. Validate behavior against current Android foreground-service limits and OEM battery policies; do not promise unrestricted 24/7 execution.
+6. **Notification-derived observations:** the notification listener parses amounts, UTR-like references and sender VPAs from notification text. These are untrusted user-interface signals, not authenticated bank evidence and must never independently settle a payment.
+
+The Android module's source was reviewed, but no signed release APK, emulator/device test, Play policy review, or end-to-end device enrollment test was performed in this review. Passing repository CI does not close these Android-specific gates.
