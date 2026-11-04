@@ -5,7 +5,7 @@ This document describes how to deploy and run the clean distributable **YOUPI PG
 ## 1. Prerequisites
 
 - **Operating System**: Linux (Ubuntu 22.04+ / Debian 12+), macOS, or Windows 10/11 / Windows Server.
-- **Node.js**: Version `>= 20.0.0` (LTS recommended).
+- **Node.js**: Version `>= 24.22.1` (required by the root package; use the current Node.js 24 LTS line).
 - **Package Manager**: `npm` (included with Node.js).
 - **Network Ports**:
   - `6100`: Payment Core API
@@ -43,6 +43,7 @@ Open `.env` in your editor and configure:
 3. `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`: Credentials for your Merchant Admin dashboard.
 4. `BASE_PAYMENT_API_URL` and `BASE_CHECKOUT_URL`: Your public domain or localhost URLs.
 5. `DEFAULT_APP_NAME`, `DEFAULT_PRIMARY_COLOR`, `DEFAULT_SUPPORT_EMAIL`: (Optional) White-label branding defaults (see `docs/WHITE_LABEL.md`).
+6. For the optional Coin Wallet Store integration, set `COIN_STORE_API_KEY` to the merchant's dedicated API key and `COIN_STORE_WEBHOOK_SECRET` to its separate webhook-signing secret. Never reuse the webhook secret as an API key. Existing integrations affected by the credential-separation migration must be updated with the dedicated API key.
 
 ### Step 3: Install Dependencies
 
@@ -107,7 +108,7 @@ For production deployment:
 The root `vercel.json` defines the approved multi-service deployment. Public
 traffic is routed to `/` (checkout), `/api/*` (payment API), `/admin/*`
 (merchant admin), `/help/*` (payment help), and `/store/*` (coin wallet store).
-The control center, Gmail observer, and SMS observer remain internal services.
+The control center, Gmail observer, and SMS observer remain internal services. This routing configuration does not make the full multi-process gateway serverless-compatible.
 
 Service-to-service URLs are injected by Vercel bindings at runtime. The
 application reads `PAYMENT_API_URL`, `CHECKOUT_PORTAL_URL`,
@@ -117,4 +118,6 @@ binding variables and must not be manually configured with deployment URLs.
 Vercel Services is currently beta. The native deployment still remains the
 recommended production target for the SQLite-backed gateway and its long-lived
 observer processes; a Vercel deployment must use a persistent database and
-separate worker strategy before handling production payment traffic.
+separate worker strategy before handling production payment traffic. The repository's
+GitHub Pages family-dashboard preview is static demo content only; it is not connected
+to the gateway or its database.
