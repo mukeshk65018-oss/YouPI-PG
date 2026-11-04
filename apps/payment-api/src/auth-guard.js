@@ -81,8 +81,9 @@ export function isAdminRequest(req) {
  * True when the caller may read the merchant-private fields of a payment session.
  *
  * Requires proof of ownership: either the gateway's own admin/observer credential, or the
- * owning merchant's webhook secret presented via `X-Merchant-Key` (which every merchant
- * integration already holds). Without it, only the public view is returned, so a leaked or
+ * owning merchant's dedicated API key presented via `X-Merchant-Key`. Webhook signing
+ * secrets are separate and are never accepted for API authentication. Without a valid
+ * owner credential, only the public view is returned, so a leaked or
  * guessed payment id cannot be used to read internal status, verification internals,
  * merchant metadata or the return URL.
  */
