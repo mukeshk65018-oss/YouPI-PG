@@ -27,7 +27,7 @@ test('family dashboard includes core accessibility and usability safeguards', as
   assert.match(html, /prefers-reduced-motion/);
   assert.match(html, /:focus-visible/);
   assert.match(html, /document\.querySelectorAll\("\.view"\)\.forEach\(v=>v\.setAttribute\("aria-hidden"/);
-  assert.match(html, /prefers-reduced-motion:\\s*reduce/);
+  assert.match(html, /prefers-reduced-motion:[^)]*reduce/);
   assert.match(html, /aria-pressed/);
 });
 
