@@ -1,8 +1,7 @@
 # YouPI-PG security & bug-fix status
 
 **Status: EXPERIMENTAL; NOT APPROVED FOR REAL-MONEY PRODUCTION.**
-Scope is limited to the fork's `security/webhook-durability-hardening` branch.
-This is a targeted static review, not an exhaustive independent penetration test or UPI settlement certification.
+This status reflects the current `feature/family-admin-dashboard` branch as reviewed on 2026-11-04. It is a targeted source/configuration review, not an exhaustive independent penetration test, bank/acquirer approval, or UPI settlement certification.
 
 ## Implemented in this branch
 
