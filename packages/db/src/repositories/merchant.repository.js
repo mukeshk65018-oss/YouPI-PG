@@ -64,7 +64,8 @@ export class MerchantRepository {
       : (data.branding || '{"primaryColor":"#2563eb","appName":"YOUPI PG","logoUrl":null}');
     const now = new Date().toISOString();
     const rawWebhookSecret = data.webhookSecret || crypto.randomBytes(32).toString('hex');
-    const apiKeyHash = data.apiKeyHash || (data.apiKey ? hashApiKey(data.apiKey) : hashApiKey(rawWebhookSecret));
+    // Keep API authentication independent from webhook signing credentials.
+    const apiKeyHash = data.apiKeyHash || (data.apiKey ? hashApiKey(data.apiKey) : null);
 
     const sql = `
       INSERT INTO merchants (id, business_name, slug, contact_email, contact_phone, webhook_url, webhook_secret, api_key_hash, branding, created_at, updated_at)
