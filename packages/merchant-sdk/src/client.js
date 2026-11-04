@@ -48,8 +48,8 @@ export class YoupiPaymentClient {
     if (this.merchantId) {
       headers['X-Merchant-Id'] = this.merchantId;
     }
-    if (this.apiKey || this.webhookSecret) {
-      headers['X-Merchant-Key'] = this.apiKey || this.webhookSecret;
+    if (this.apiKey) {
+      headers['X-Merchant-Key'] = this.apiKey;
     }
     if (params.orderToken) {
       headers['X-Order-Token'] = params.orderToken;
