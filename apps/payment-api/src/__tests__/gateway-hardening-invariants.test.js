@@ -641,7 +641,7 @@ describe('Gateway Hardening & Invariant Protection Test Suite (#23, #25, #26, #2
     const authRes = await new Promise((resolve, reject) => {
       const req = http.request(url, {
         method: 'GET',
-        headers: { 'X-Merchant-Key': merchant.webhookSecret }
+        headers: { 'X-Merchant-Key': merchant.merchantKey }
       }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
