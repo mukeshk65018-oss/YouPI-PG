@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { getCoinStoreWebhookSecret, LEGACY_DEFAULT_WEBHOOK_SECRET, resolveDefaultBranding } from '@youpi/common';
 import { getDatabase } from './database.js';
-import { MerchantRepository } from './repositories/merchant.repository.js';
+import { MerchantRepository, hashApiKey } from './repositories/merchant.repository.js';
 import { ReceivingAccountRepository } from './repositories/receiving-account.repository.js';
 import { CustomerRepository } from './repositories/customer.repository.js';
 
@@ -209,6 +209,20 @@ export function runMigrations(targetDb) {
       // Older installs were seeded with a publicly known secret: rotate it.
       merchantRepo.update(defaultMerchant.id, { webhookSecret: getCoinStoreWebhookSecret() });
       console.warn('[migrate] Rotated the default merchant webhook secret away from the legacy public value. Update your merchant webhook verifier.');
+    }
+  }
+
+  // Upgrade legacy records that used the webhook HMAC secret as the merchant API key.
+  // Rotate the API credential and keep webhook signing material independent.
+  for (const merchant of merchantRepo.findAll()) {
+    if (merchant.apiKeyHash && merchant.webhookSecret
+      && merchant.apiKeyHash === hashApiKey(merchant.webhookSecret)) {
+      const replacementApiKey = `yp_live_${crypto.randomBytes(24).toString('hex')}`;
+      merchantRepo.update(merchant.id, {
+        apiKey: replacementApiKey,
+        branding: { ...(merchant.branding || {}), merchantApiKey: replacementApiKey }
+      });
+      console.warn(`[migrate] Rotated a legacy API credential for merchant ${merchant.id}; update its server-side integration key.`);
     }
   }
 
